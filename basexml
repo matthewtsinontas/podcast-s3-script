@@ -28,10 +28,10 @@
 <description>Verbose description of the podcast.</description>
 <itunes:summary>Duplicate of above verbose description.</itunes:summary>
 <itunes:subtitle>Short description of the podcast - 255 character max.</itunes:subtitle>
-<lastBuildDate>Fri, 05 Oct 2018 09:00:00 GMT</lastBuildDate>
+<lastBuildDate>{{date}}</lastBuildDate>
 
 <!--REPEAT THIS BLOCK FOR EACH EPISODE-->
-{{}}
+{{items}}
 <!--END REPEAT--> 
 
 </channel>

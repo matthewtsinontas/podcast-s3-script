@@ -23,6 +23,16 @@ try {
     process.exit(1);
 }
 
+// Remove all unsafe characters from file names
+mp3Filenames.forEach((name) => {
+    const originalName = name;
+    const newName = name.replace(/\&|\$|\+|\,|\/|\:|\;|\=|\?|\@|\£|\#/g, '');
+    fs.renameSync(path.join(__dirname, 'files', originalName), path.join(__dirname, 'files', newName));
+});
+
+// Reread the files now they have new names
+mp3Filenames = fs.readdirSync('files');
+
 const dateTime = rfc822Date(new Date());
 
 const mp3ToXml = mp3Filenames
@@ -44,19 +54,34 @@ const mp3ToXml = mp3Filenames
         }
     })
 
-const template = fs.readFileSync('./basexml', 'utf-8');
+let template = fs.readFileSync('./basexml', 'utf-8');
 
-const newTemplate = template.replace('{{}}', jsonxml(mp3ToXml));
+template = template.replace('{{items}}', jsonxml(mp3ToXml));
 
-fs.writeFileSync('./files/index.html', newTemplate);
+template = template.replace('{{date}}', dateTime);
 
-fs.readdirSync('files').forEach((file) => {
-    awsS3Client.putObject({
-        Bucket: 'krispodcastbucket',
-        Key: file,
-        Body: fs.readFileSync(path.join(__dirname, 'files', file)),
-        ACL: 'public-read'
-    }, (res) => {
-        console.log(`Successfully uploaded '${file}'`);
+fs.writeFileSync('./files/index.html', template);
+
+const bucketDetails = {
+    Bucket: 'krispodcastbucket',
+    MaxKeys: 1000
+};
+
+awsS3Client.listObjects(bucketDetails, (err, res) => {
+    const names = res.Contents.map(({ Key }) => Key).filter((name) => name !== 'index.html');
+
+    fs
+    .readdirSync('files')
+    .filter((name) => !names.includes(name))
+    .forEach((file) => {
+        awsS3Client.putObject({
+            Bucket: 'krispodcastbucket',
+            Key: file,
+            Body: fs.readFileSync(path.join(__dirname, 'files', file)),
+            ACL: 'public-read'
+        }, (res) => {
+            console.log(`Successfully uploaded '${file}'`);
+        });
     });
 });
+
