@@ -7,7 +7,7 @@ const rfc822Date = require('rfc822-date');
 
 dotenv.config();
 
-const awsS3Client = new AWS.S3( {
+const awsS3Client = new AWS.S3({
     accessKeyId: process.env.ACCESS_KEY,
     secretAccessKey: process.env.SECRET_KEY,
     region: 'eu-west-2',
@@ -54,11 +54,10 @@ const mp3ToXml = mp3Filenames
         }
     })
 
-let template = fs.readFileSync('./basexml', 'utf-8');
-
-template = template.replace('{{items}}', jsonxml(mp3ToXml));
-
-template = template.replace('{{date}}', dateTime);
+const template = fs
+    .readFileSync('./basexml', 'utf-8')
+    .replace('{{items}}', jsonxml(mp3ToXml))
+    .replace('{{date}}', dateTime);
 
 fs.writeFileSync('./files/index.html', template);
 
@@ -69,19 +68,18 @@ const bucketDetails = {
 
 awsS3Client.listObjects(bucketDetails, (err, res) => {
     const names = res.Contents.map(({ Key }) => Key).filter((name) => name !== 'index.html');
-
     fs
-    .readdirSync('files')
-    .filter((name) => !names.includes(name))
-    .forEach((file) => {
-        awsS3Client.putObject({
-            Bucket: 'krispodcastbucket',
-            Key: file,
-            Body: fs.readFileSync(path.join(__dirname, 'files', file)),
-            ACL: 'public-read'
-        }, (res) => {
-            console.log(`Successfully uploaded '${file}'`);
+        .readdirSync('files')
+        .filter((name) => !names.includes(name))
+        .forEach((file) => {
+            awsS3Client.putObject({
+                Bucket: 'krispodcastbucket',
+                Key: file,
+                Body: fs.readFileSync(path.join(__dirname, 'files', file)),
+                ACL: 'public-read'
+            }, (res) => {
+                console.log(`Successfully uploaded '${file}'`);
+            });
         });
-    });
 });
 
